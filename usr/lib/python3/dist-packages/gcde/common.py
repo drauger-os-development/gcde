@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-#  __init__.py
+#  common.py
 #
 #  Copyright 2020 Thomas Castleman <contact@draugeros.org>
 #
@@ -21,6 +21,6 @@
 #  MA 02110-1301, USA.
 #
 #
-"""__init__ for GCDE Lib"""
-from gcde import tile as tile
-from gcde import common as common
+"""Common functions"""
+def scale(scale: float, res: int):
+    return int(scale * res)
