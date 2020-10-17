@@ -1,0 +1,16 @@
+{
+	"menu":{"exec":["menu"],
+			"icon":"menu",
+			"name":"Menu",
+			"X":0.5,
+			"Y":0.5,
+			"width":0.1,
+			"height":0.1},
+	"browser":{"exec":["xdg-launch", "https://draugeros.org/go"],
+			   "icon":"browser",
+			   "name":"Browser",
+			   "X":0.1,
+			   "Y":0.1,
+			   "width":0.1,
+			   "height":0.1}
+}
