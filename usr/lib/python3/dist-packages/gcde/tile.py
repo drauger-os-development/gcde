@@ -62,7 +62,8 @@ class Tile():
             self.obj.set_label(self.settings["name"])
         image = Gtk.Image.new_from_icon_name(self.settings["icon"],
                                              global_settings["icon size"])
-        self.obj.set_icon(image)
+        self.obj.set_image(image)
+        self.obj.set_image_position(Gtk.PositionType.TOP)
 
     def __get_internal_obj__(self):
         """Get internal GTK Object for Tile
