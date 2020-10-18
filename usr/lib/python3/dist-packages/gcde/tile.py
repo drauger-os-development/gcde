@@ -25,6 +25,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
+from subprocess import Popen
 
 
 class Tile():
@@ -71,6 +72,11 @@ class Tile():
         FOR INTERNAL GCDE USE ONLY"""
         return (self.obj, self.settings["X"], self.settings["Y"],
                 self.settings["width"], self.settings["height"])
+
+    def run(self, widget):
+        """Execute Click action"""
+        Popen(self.settings["exec"])
+
 
 def new(settings: dict):
     """Make a new tile with the settings in the `settings` list.
