@@ -1,5 +1,9 @@
 {
 	"blur":0.25,
 	"names":true,
-	"icon size":64
+	"icon size":128,
+	"menu":{
+		"width":0.5,
+		"height":0.5
+	}
 }
