@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-#  common.py
+#  restart.py
 #
 #  Copyright 2020 Thomas Castleman <contact@draugeros.org>
 #
@@ -21,20 +21,24 @@
 #  MA 02110-1301, USA.
 #
 #
-"""Common functions"""
-from ctypes import cdll, byref, create_string_buffer
+"""Restart GCDE"""
+import gcde
+import os
+import psutil
+import signal
+import subprocess
 
+gcde.common.set_procname("gcde-re")
 
-def scale(scale: float, res: int):
-    """Get integer that is 'scale' of 'res'
+pid = None
+process_name = "gcde"
 
-    Useful for scaling images and objects based on the resolution of a screen"""
-    return int(scale * res)
+for proc in psutil.process_iter():
+    if process_name == proc.name():
+       pid = proc.pid
 
-
-def set_procname(newname):
-    """set procname for current process"""
-    libc = cdll.LoadLibrary('libc.so.6')    #Loading a 3rd party library C
-    buff = create_string_buffer(10) #Note: One larger than the name (man prctl says that)
-    buff.value = bytes(newname, 'utf-8')               #Null terminated string as it should be
-    libc.prctl(15, byref(buff), 0, 0, 0) #Refer to "#define" of "/usr/include/linux/prctl.h" for the misterious value 16 & arg[3..5] are zero as the man page says.
+os.kill(pid, signal.SIGTERM)
+try:
+    subprocess.Popen(["/usr/share/gcde/engine.py"])
+except FileNotFoundError:
+    subprocess.Popen(["./engine.py"])

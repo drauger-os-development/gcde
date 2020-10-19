@@ -24,8 +24,9 @@
 """Tile Object library to create tiles with different functions on GCDE"""
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk, GdkPixbuf
 from subprocess import Popen
+import gcde.common as common
 
 
 class Tile():
@@ -46,6 +47,7 @@ class Tile():
         """Set inital settings for a Tile object"""
         for each in new_settings:
             self.settings[each] = new_settings[each]
+        print("Set settings for : %s " % (new_settings["name"]))
 
     def change_setting(self, setting_key: str, setting_value):
         """Change an individual setting for an indivdual tile"""
@@ -57,14 +59,37 @@ class Tile():
         This is useful for debugging, and for re-initializing Tiles."""
         return self.settings
 
-    def make(self, global_settings):
+    def make(self, global_settings, width, height):
         """Define Tile drawing properties"""
         if global_settings["names"] is True:
             self.obj.set_label(self.settings["name"])
-        image = Gtk.Image.new_from_icon_name(self.settings["icon"],
-                                             global_settings["icon size"])
+        icon_theme = Gtk.IconTheme.get_default()
+        icon_info = icon_theme.lookup_icon(self.settings["icon"], 48, 0)
+        image = GdkPixbuf.Pixbuf()
+        try:
+            image = image.new_from_file_at_scale(icon_info.get_filename(),
+                                                 global_settings["icon size"],
+                                                 global_settings["icon size"],
+                                                 False)
+        except AttributeError:
+            icon_theme = Gtk.IconTheme.get_default()
+            icon_info = icon_theme.lookup_icon("unknown", 48, 0)
+            image = GdkPixbuf.Pixbuf()
+            image = image.new_from_file_at_scale(icon_info.get_filename(),
+                                                 global_settings["icon size"],
+                                                 global_settings["icon size"],
+                                                 False)
+        image = Gtk.Image.new_from_pixbuf(image)
         self.obj.set_image(image)
         self.obj.set_image_position(Gtk.PositionType.TOP)
+        self.obj.set_margin_top(common.scale(0.0073, height))
+        self.obj.set_margin_bottom(common.scale(0.0073, height))
+        self.obj.set_margin_left(common.scale(0.006, width))
+        self.obj.set_margin_right(common.scale(0.006, width))
+        # This line below has been commented out because it just makes Tiles
+        # transparent. It doesn't blur the background. We must wait until GTK 4
+        # for that capability.
+        # self.obj.set_opacity(global_settings["blur"])
 
     def __get_internal_obj__(self):
         """Get internal GTK Object for Tile
