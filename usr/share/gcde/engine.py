@@ -22,11 +22,12 @@
 #
 #
 """Engine for GCDE"""
+GTK_VERSION = "3.0"
 import os
 import shutil
 import json
 import gi
-gi.require_version('Gtk', '3.0')
+gi.require_version('Gtk', GTK_VERSION)
 from gi.repository import Gtk, Gdk, Pango
 import cairo
 from subprocess import check_output, Popen
