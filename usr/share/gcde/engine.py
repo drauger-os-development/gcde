@@ -93,7 +93,26 @@ class Matrix(Gtk.Window):
 
         self.tiles = get_tiles()
 
+        self.scrolling = False
+
         self.main("clicked")
+
+    def make_scrolling(self, widget):
+        """Make current window scroll"""
+        self.scrolling = True
+
+        self.remove(self.grid)
+
+        self.scrolled_window = Gtk.ScrolledWindow()
+        self.scrolled_window.set_border_width(10)
+        # there is always the scrollbar (otherwise: AUTOMATIC -
+        # only if needed
+        # - or NEVER)
+        self.scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC,
+                                        Gtk.PolicyType.AUTOMATIC)
+        self.add(self.scrolled_window)
+        # self.scrolled_window.add_with_viewport(self.grid)
+        self.scrolled_window.add(self.grid)
 
     def main(self, widget):
         self.clear_window()
@@ -318,6 +337,11 @@ class Matrix(Gtk.Window):
         children = self.grid.get_children()
         for each in children:
             self.grid.remove(each)
+        if self.scrolling:
+            self.scrolled_window.remove(self.grid)
+            self.remove(self.scrolled_window)
+            self.add(self.grid)
+            self.scrolling = False
 
 
 def main():
