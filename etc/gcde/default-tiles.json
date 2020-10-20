@@ -47,5 +47,19 @@
 		   	   "X":0.1,
 		   	   "Y":5,
 		   	   "width":0.1,
-		   	   "height":0.1}
+		   	   "height":0.1},
+	"terminal":{"exec":["exo-open", "--launch", "TerminalEmulator"],
+				"icon":"utilities-x-terminal",
+				"name":"Terminal Emulator",
+				"X":5,
+				"Y":0.1,
+				"width":0.1,
+				"height":0.1},
+	"session_manager":{"exec":["session_manager"],
+					   "icon":"system-reboot",
+				   	   "name":"Log Out / Shutdown",
+				   	   "X":2,
+				   	   "Y":5,
+				   	   "width":0.1,
+				   	   "height":0.1}
 }
