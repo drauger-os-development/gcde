@@ -61,5 +61,12 @@
 				   	   "X":2,
 				   	   "Y":5,
 				   	   "width":0.1,
-				   	   "height":0.1}
+				   	   "height":0.1},
+	"playonlinux":{"exec":["playonlinux"],
+				   "icon":"playonlinux",
+				   "name":"PlayOnLinux",
+				   "X":0.1,
+				   "Y":1.75,
+				   "width":0.1,
+				   "height":0.1}
 }
