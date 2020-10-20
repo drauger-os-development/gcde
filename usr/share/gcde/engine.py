@@ -43,6 +43,7 @@ local_settings = home + ".config/gcde/global_settings.json"
 local_tiles = home + ".config/gcde/tiles.json"
 global_settings = "../../../etc/gcde/defaults-global.json"
 global_tiles = "../../../etc/gcde/default-tiles.json"
+themes_file = home + ".config/gtk-3.0/settings.ini"
 
 # Get screen resolution for proper scaling
 results = check_output(['xrandr']).decode().split("current")[1].split(",")[0]
@@ -129,6 +130,55 @@ class Matrix(Gtk.Window):
 
         self.show_all()
 
+    def session_manager(self, widget):
+        """Basic Session Manager"""
+        self.clear_window()
+
+        title = Gtk.Label()
+        title.set_markup("\n\tAre you sure?\t\n")
+        title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(0.05,
+                                                                    height))))
+        self.grid.attach(title, 0, 0, width, 2)
+
+        reboot = {"exec":["reboot"],
+    			"icon":"system-reboot",
+    			"name":"Reboot",
+    			"X":0,
+    			"Y":2,
+    			"width":int(width / 4),
+    			"height":1}
+        log_out = {"exec":["./logout.py"],
+    			"icon":"system-log-out",
+    			"name":"Log Out",
+    			"X":int(width / 4),
+    			"Y":2,
+    			"width":int(width / 4),
+    			"height":1}
+        shutdown = {"exec":["poweroff"],
+    			"icon":"gnome-shutdown",
+    			"name":"Shutdown",
+    			"X":int(width / 4) * 2,
+    			"Y":2,
+    			"width":int(width / 4),
+    			"height":1}
+        back = {"exec":["main"],
+    			"icon":"application-exit",
+    			"name":"Back",
+    			"X":int(width / 4) * 3,
+    			"Y":2,
+    			"width":int(width / 4),
+    			"height":1}
+        back = gcde.tile.new(back)
+        self.__place_tile__(back, scale=False)
+        restart = gcde.tile.new(reboot)
+        poweroff = gcde.tile.new(shutdown)
+        quit = gcde.tile.new(log_out)
+        self.__place_tile__(restart, scale=False)
+        self.__place_tile__(poweroff, scale=False)
+        self.__place_tile__(quit, scale=False)
+
+        self.show_all()
+
     def draw(self, widget, context):
         context.set_source_rgba(0, 0, 0, 0)
         context.set_operator(cairo.OPERATOR_SOURCE)
@@ -138,10 +188,14 @@ class Matrix(Gtk.Window):
 
     def tile(self, widget):
         """Get Tiles to place into Matrix, then place them"""
+        self.clear_window()
+
         for each in self.tiles:
             self.__place_tile__(gcde.tile.new(self.tiles[each]))
 
-    def __place_tile__(self, tile):
+        self.show_all()
+
+    def __place_tile__(self, tile, scale=True):
         """Place tile in matrix"""
         tile.make(self.settings, width, height)
         tile_obj = tile.__get_internal_obj__()
@@ -149,22 +203,30 @@ class Matrix(Gtk.Window):
         if tile_settings["exec"][0].lower() == "settings":
             tile_obj[0].connect("clicked", self.settings_window)
         elif tile_settings["exec"][0].lower() == "menu":
-            tile_obj[0].connect("clicked", self.tile)
+            tile_obj[0].connect("clicked", self.menu)
         elif tile_settings["exec"][0].lower() == "main":
-            tile_obj[0].connect("clicked", self.main)
+            tile_obj[0].connect("clicked", self.tile)
+        elif tile_settings["exec"][0].lower() == "session_manager":
+            tile_obj[0].connect("clicked", self.session_manager)
         elif tile_settings["exec"][0].lower() == "restart":
             tile_obj[0].connect("clicked", self.restart)
         else:
             tile_obj[0].connect("clicked", tile.run)
-        self.grid.attach(tile_obj[0],
-                         gcde.common.scale(tile_obj[1], width),
-                         gcde.common.scale(tile_obj[2], height),
-                         gcde.common.scale(tile_obj[3], width),
-                         gcde.common.scale(tile_obj[4], height))
+        if scale:
+            self.grid.attach(tile_obj[0],
+                             gcde.common.scale(tile_obj[1], width),
+                             gcde.common.scale(tile_obj[2], height),
+                             gcde.common.scale(tile_obj[3], width),
+                             gcde.common.scale(tile_obj[4], height))
+        else:
+            self.grid.attach(tile_obj[0], tile_obj[1], tile_obj[2], tile_obj[3],
+                             tile_obj[4])
 
     def settings_window(self, widget):
         """Settings Window"""
         self.clear_window()
+
+        self.make_scrolling("clicked")
 
         sub_heading = 0.025
         label = 0.015
@@ -225,24 +287,64 @@ class Matrix(Gtk.Window):
                                                                     height))))
         self.grid.attach(self.Y_scaler, 0, 7, width, 2)
 
+        theming_defaults = get_theming_defaults()
+        gtk_themes = list_gtk_themes()
+        icon_themes = list_icon_themes()
+
+        theming_title = Gtk.Label()
+        theming_title.set_markup("\n\tTheming\t\n")
+        theming_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(sub_heading,
+                                                                    height))))
+        self.grid.attach(theming_title, 0, 9, width, 2)
+
+        gtk_theming_title = Gtk.Label()
+        gtk_theming_title.set_markup("\n\tGtk Theme\t\n")
+        gtk_theming_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
+                                                                    height))))
+        self.grid.attach(gtk_theming_title, 0, 11, width, 2)
+
+        self.gtk_theme_chooser = Gtk.ComboBoxText.new()
+        for each in gtk_themes:
+            self.gtk_theme_chooser.append(each, each)
+        self.gtk_theme_chooser.set_active_id(theming_defaults["gtk-theme-name"])
+        self.gtk_theme_chooser.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
+                                                                    height))))
+
+        self.grid.attach(self.gtk_theme_chooser, 0, 13, width, 2)
+
+        icon_theming_title = Gtk.Label()
+        icon_theming_title.set_markup("\n\tIcon Theme\t\n")
+        icon_theming_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
+                                                                    height))))
+        self.grid.attach(icon_theming_title, 0, 15, width, 2)
+
+        self.icon_theme_chooser = Gtk.ComboBoxText.new()
+        for each in icon_themes:
+            self.icon_theme_chooser.append(each.lower(), each)
+        self.icon_theme_chooser.set_active_id(theming_defaults["gtk-icon-theme-name"])
+        self.icon_theme_chooser.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
+                                                                    height))))
+
+        self.grid.attach(self.icon_theme_chooser, 0, 17, width, 2)
+
         sars = {"exec":["restart"],
     			"icon":"system-reboot",
     			"name":"Save and Restart GCDE",
     			"X":0,
-    			"Y":8,
-    			"width":0.05,
-    			"height":0.05}
+    			"Y":19,
+    			"width":int(width / 2),
+    			"height":1}
         quit = {"exec":["main"],
     			"icon":"application-exit",
     			"name":"Exit",
-    			"X":100,
-    			"Y":8,
-    			"width":0.05,
-    			"height":0.05}
+    			"X":int(width / 2),
+    			"Y":19,
+    			"width":int(width / 2),
+    			"height":1}
         sars = gcde.tile.new(sars)
-        #quit = gcde.tile.new(quit)
-        self.__place_tile__(sars)
-        #self.__place_tile__(quit)
+        quit = gcde.tile.new(quit)
+        self.__place_tile__(sars, scale=False)
+        self.__place_tile__(quit, scale=False)
 
         self.show_all()
 
@@ -265,6 +367,23 @@ class Matrix(Gtk.Window):
         self.settings["menu"]["height"] = self.Y_scaler.get_value()
         with open(local_settings, "w") as file:
             json.dump(self.settings, file, indent=1)
+        with open(themes_file, "r") as file:
+            data = file.read().split("\n")
+        for each in range(len(data) - 1, -1, -1):
+            data[each] = data[each].split("=")
+        for each in data:
+            if each[0] == "gtk-theme-name":
+                each[1] = self.gtk_theme_chooser.get_active_id()
+            elif each[0] == "gtk-icon-theme-name":
+                each[1] = self.icon_theme_chooser.get_active_id()
+        for each in enumerate(data):
+            data[each[0]] = "=".join(data[each[0]])
+        data = "\n".join(data)
+        os.remove(themes_file)
+        with open(themes_file, "w") as file:
+            file.write(data)
+
+
 
 
 
@@ -273,63 +392,73 @@ class Matrix(Gtk.Window):
         """Application Menu"""
         self.clear_window()
 
+        self.make_scrolling("clicked")
+
         prefix = "/usr/share/applications/"
         file_list = sorted(os.listdir(prefix))
         for each in range(len(file_list) - 1, -1, -1):
             if os.path.isdir(prefix + file_list[each]):
                 del file_list[each]
         print(len(file_list))
-        w = gcde.common.scale(self.settings["menu"]["width"], width)
-        h = gcde.common.scale(self.settings["menu"]["height"], height)
+        w = self.settings["menu"]["width"]
+        h = self.settings["menu"]["height"]
         x = 0
         y = 0
-        width_max = int(width / w)
+        width_max = 7
         tiles = []
+        back = {"exec":["main"],
+                "icon":"application-exit",
+                "name":"Back to Matrix",
+                "X":x,
+                "Y":y,
+                "width":w,
+                "height":h}
+        tiles.append(gcde.tile.new(back))
+        x += 1
         for each in file_list:
             skip = False
             with open(prefix + each, "r") as file:
                 data = file.read().split("\n")
-            for each in data:
-                if "NoDisplay" in each:
-                    if each[-4:].lower() == "true":
+            for each1 in data:
+                if "NoDisplay" in each1:
+                    if each1[-4:].lower() == "true":
                         skip = True
                         break
-                elif "OnlyShowIn" in each:
-                    trash = each.split("=")
-                    if "gcde" not in each.lower():
+                elif "OnlyShowIn" in each1:
+                    trash = each1.split("=")
+                    if "gcde" not in each1.lower():
                         skip = True
                         break
-                elif "Terminal" in each:
-                    if each[-4:].lower() == "true":
+                elif "Terminal" in each1:
+                    if each1[-4:].lower() == "true":
                         skip = True
                         break
-                elif "" == each:
+                elif "" == each1:
                     break
             if skip:
                 continue
-            for each in data:
-                if each[:5] == "Name=":
-                    name = each[5:]
-                elif each[:5] == "Icon=":
-                    icon = each[5:]
+            for each1 in data:
+                if each1[:5] == "Name=":
+                    name = each1[5:]
+                elif each1[:5] == "Icon=":
+                    icon = each1[5:]
             tile_settings = {"exec":["xdg-open", prefix + each],
                              "icon":icon, "name":name,
                              "X":x, "Y":y, "width":w, "height":h}
             tiles.append(gcde.tile.new(tile_settings))
             if x >= width_max:
                 x = 0
-                y = y + 1
+                y += 1
             else:
-                x = x + 1
+                x += 1
         print(len(tiles))
         tile_count = 1
         for each in tiles:
-            self.__place_tile__(each)
+            self.__place_tile__(each, scale=False)
             print("Tiles: %s" % (tile_count))
-            break
             tile_count += 1
 
-        #self.show_all()
+        self.show_all()
 
 
     def clear_window(self):
@@ -342,6 +471,45 @@ class Matrix(Gtk.Window):
             self.remove(self.scrolled_window)
             self.add(self.grid)
             self.scrolling = False
+
+def list_icon_themes():
+    """List Icon Themes"""
+    themes = os.listdir("/usr/share/icons")
+    for each in range(len(themes) - 1, -1, -1):
+        if "default" in themes[each].lower():
+            del themes[each]
+    return themes
+
+
+def list_gtk_themes(version=GTK_VERSION):
+    """List GTK themes for a specific version"""
+    themes_dir = "/usr/share/themes/"
+    themes = os.listdir(themes_dir)
+    for each in range(len(themes) - 1, -1, -1):
+        sub = os.listdir(themes_dir + themes[each])
+        if ("gtk-" + version) not in sub:
+            del themes[each]
+        elif "default" in themes[each].lower():
+            del themes[each]
+    return themes
+
+
+def get_theming_defaults():
+    """Get theming defaults"""
+    with open(themes_file, "r") as file:
+        defaults = file.read()
+    defaults = defaults.split("\n")[1:]
+    output = {}
+    for each in range(len(defaults) - 1, -1, -1):
+        defaults[each] = defaults[each].split("=")
+        try:
+            if defaults[each][0] == "gtk-application-prefer-dark-theme":
+                del defaults[each]
+                continue
+            output[defaults[each][0]] = defaults[each][1]
+        except IndexError:
+            pass
+    return output
 
 
 def main():
