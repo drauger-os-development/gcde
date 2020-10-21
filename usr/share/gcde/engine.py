@@ -31,7 +31,10 @@ gi.require_version('Gtk', GTK_VERSION)
 from gi.repository import Gtk, Gdk, Pango
 import cairo
 from subprocess import check_output, Popen
+import inspect
+import copy
 import gcde
+import plugins
 
 gcde.common.set_procname("gcde")
 
@@ -190,8 +193,32 @@ class Matrix(Gtk.Window):
         """Get Tiles to place into Matrix, then place them"""
         self.clear_window()
 
+        plugin_list = dir(plugins)
+        for each in range(len(plugin_list) - 1, -1, -1):
+            if plugin_list[each][0] == "_":
+                del plugin_list[each]
+            elif plugin_list[each] == "example":
+                del plugin_list[each]
+        plug_objs = []
+        for each in plugin_list:
+            plug_new = getattr(plugins, each)
+            try:
+                if plug_new.PLUGIN_TYPE == 0:
+                    plug_objs.append(plug_new.plugin_setup(copy.deepcopy(self.tiles[each])))
+                elif plug_new.PLUGIN_TYPE == 1:
+                    plug_objs.append(plug_new.plugin_setup(copy.deepcopy(self.settings)))
+                elif plug_new.PLUGIN_TYPE >= 2:
+                    plug_objs.append(plug_new.plugin_setup({"loc":copy.deepcopy(self.tiles[each]),
+                                                    "global":copy.deepcopy(self.settings)}))
+            except KeyError:
+                continue
+
+
         for each in self.tiles:
-            self.__place_tile__(gcde.tile.new(self.tiles[each]))
+            if ("tile" in each.lower()) or (each in ("session_manager", "menu", "settings")):
+                self.__place_tile__(gcde.tile.new(self.tiles[each]), scale=False)
+        for each in plug_objs:
+            self.__place_tile__(each, scale=False)
 
         self.show_all()
 
