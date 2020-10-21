@@ -94,10 +94,42 @@ class Matrix(Gtk.Window):
         self.grid.set_row_spacing(1)
         self.add(self.grid)
         self.settings = get_settings()
-
         self.tiles = get_tiles()
-
         self.scrolling = False
+        self.background_launched = False
+
+        self.reboot = {"exec":["reboot"],
+    			"icon":"system-reboot",
+    			"name":"Reboot",
+    			"X":0,
+    			"Y":2,
+    			"width":int(width / 4),
+    			"height":1}
+        self.log_out = {"exec":["./logout.py"],
+    			"icon":"system-log-out",
+    			"name":"Log Out",
+    			"X":int(width / 4),
+    			"Y":2,
+    			"width":int(width / 4),
+    			"height":1}
+        self.shutdown = {"exec":["poweroff"],
+    			"icon":"gnome-shutdown",
+    			"name":"Shutdown",
+    			"X":int(width / 4) * 2,
+    			"Y":2,
+    			"width":int(width / 4),
+    			"height":1}
+        self.back = {"exec":["main"],
+    			"icon":"application-exit",
+    			"name":"Back",
+    			"X":int(width / 4) * 3,
+    			"Y":2,
+    			"width":int(width / 4),
+    			"height":1}
+        self.back = gcde.tile.new(self.back)
+        self.reboot = gcde.tile.new(self.reboot)
+        self.poweroff = gcde.tile.new(self.shutdown)
+        self.log_out = gcde.tile.new(self.log_out)
 
         self.main("clicked")
 
@@ -143,42 +175,10 @@ class Matrix(Gtk.Window):
                                                                     height))))
         self.grid.attach(title, 0, 0, width, 2)
 
-        reboot = {"exec":["reboot"],
-    			"icon":"system-reboot",
-    			"name":"Reboot",
-    			"X":0,
-    			"Y":2,
-    			"width":int(width / 4),
-    			"height":1}
-        log_out = {"exec":["./logout.py"],
-    			"icon":"system-log-out",
-    			"name":"Log Out",
-    			"X":int(width / 4),
-    			"Y":2,
-    			"width":int(width / 4),
-    			"height":1}
-        shutdown = {"exec":["poweroff"],
-    			"icon":"gnome-shutdown",
-    			"name":"Shutdown",
-    			"X":int(width / 4) * 2,
-    			"Y":2,
-    			"width":int(width / 4),
-    			"height":1}
-        back = {"exec":["main"],
-    			"icon":"application-exit",
-    			"name":"Back",
-    			"X":int(width / 4) * 3,
-    			"Y":2,
-    			"width":int(width / 4),
-    			"height":1}
-        back = gcde.tile.new(back)
-        self.__place_tile__(back, scale=False)
-        restart = gcde.tile.new(reboot)
-        poweroff = gcde.tile.new(shutdown)
-        quit = gcde.tile.new(log_out)
-        self.__place_tile__(restart, scale=False)
-        self.__place_tile__(poweroff, scale=False)
-        self.__place_tile__(quit, scale=False)
+        self.__place_tile__(self.log_out, scale=False)
+        self.__place_tile__(self.reboot, scale=False)
+        self.__place_tile__(self.poweroff, scale=False)
+        self.__place_tile__(self.back, scale=False)
 
         self.show_all()
 
@@ -227,18 +227,21 @@ class Matrix(Gtk.Window):
         tile.make(self.settings, width, height)
         tile_obj = tile.__get_internal_obj__()
         tile_settings = tile.get_settings()
-        if tile_settings["exec"][0].lower() == "settings":
-            tile_obj[0].connect("clicked", self.settings_window)
-        elif tile_settings["exec"][0].lower() == "menu":
-            tile_obj[0].connect("clicked", self.menu)
-        elif tile_settings["exec"][0].lower() == "main":
-            tile_obj[0].connect("clicked", self.tile)
-        elif tile_settings["exec"][0].lower() == "session_manager":
-            tile_obj[0].connect("clicked", self.session_manager)
-        elif tile_settings["exec"][0].lower() == "restart":
-            tile_obj[0].connect("clicked", self.restart)
-        else:
-            tile_obj[0].connect("clicked", tile.run)
+        try:
+            if tile_settings["exec"][0].lower() == "settings":
+                tile_obj[0].connect("clicked", self.settings_window)
+            elif tile_settings["exec"][0].lower() == "menu":
+                tile_obj[0].connect("clicked", self.menu)
+            elif tile_settings["exec"][0].lower() == "main":
+                tile_obj[0].connect("clicked", self.tile)
+            elif tile_settings["exec"][0].lower() == "session_manager":
+                tile_obj[0].connect("clicked", self.session_manager)
+            elif tile_settings["exec"][0].lower() == "restart":
+                tile_obj[0].connect("clicked", self.restart)
+            else:
+                tile_obj[0].connect("clicked", tile.run)
+        except TypeError:
+            pass
         if scale:
             self.grid.attach(tile_obj[0],
                              gcde.common.scale(tile_obj[1], width),
@@ -296,18 +299,16 @@ class Matrix(Gtk.Window):
                                                                     height))))
         self.grid.attach(Y_title, 0, 6, width, 2)
 
-        self.X_scaler = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0.002,
-                                               0.999, 2)
-        self.X_scaler.set_digits(3)
+        self.X_scaler = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1,
+                                               10, 1)
         self.X_scaler.set_draw_value(True)
         self.X_scaler.set_value(self.settings["menu"]["width"])
         self.X_scaler.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(sub_heading,
                                                                     height))))
         self.grid.attach(self.X_scaler, 0, 5, width, 2)
 
-        self.Y_scaler = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0.002,
-                                               0.999, 2)
-        self.Y_scaler.set_digits(3)
+        self.Y_scaler = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1,
+                                               10, 1)
         self.Y_scaler.set_draw_value(True)
         self.Y_scaler.set_value(self.settings["menu"]["height"])
         self.Y_scaler.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(sub_heading,
@@ -410,11 +411,6 @@ class Matrix(Gtk.Window):
         with open(themes_file, "w") as file:
             file.write(data)
 
-
-
-
-
-
     def menu(self, widget):
         """Application Menu"""
         self.clear_window()
@@ -478,15 +474,13 @@ class Matrix(Gtk.Window):
                 y += 1
             else:
                 x += 1
-        print(len(tiles))
-        tile_count = 1
         for each in tiles:
             self.__place_tile__(each, scale=False)
-            print("Tiles: %s" % (tile_count))
-            tile_count += 1
+        # Try to free some memeory
+        tiles = None
+        file_list = None
 
         self.show_all()
-
 
     def clear_window(self):
         """Clear Window"""
@@ -498,6 +492,7 @@ class Matrix(Gtk.Window):
             self.remove(self.scrolled_window)
             self.add(self.grid)
             self.scrolling = False
+
 
 def list_icon_themes():
     """List Icon Themes"""
