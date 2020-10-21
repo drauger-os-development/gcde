@@ -220,6 +220,8 @@ class Matrix(Gtk.Window):
         for each in plug_objs:
             self.__place_tile__(each, scale=False)
 
+        del plug_objs
+
         self.show_all()
 
     def __place_tile__(self, tile, scale=True):
@@ -477,8 +479,8 @@ class Matrix(Gtk.Window):
         for each in tiles:
             self.__place_tile__(each, scale=False)
         # Try to free some memeory
-        tiles = None
-        file_list = None
+        del tiles
+        del file_list
 
         self.show_all()
 

@@ -28,7 +28,7 @@ import subprocess
 import copy
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk, Pango, Gdk
 
 PLUGIN_TYPE=0
 
@@ -62,15 +62,30 @@ class sys_info_display(gcde.tile.Tile):
             if "model name" in each:
                 cpu = each.split(":")[1]
                 break
-        os = subprocess.check_output(["lsb_release", "-si"]).decode()[:-1]
-        version = subprocess.check_output(["lsb_release", "-sr"]).decode()[:-1]
+        os = subprocess.check_output(["lsb_release", "-sd"]).decode()[:-1]
+        cpu = "".join(cpu.split("(R)"))
+        cpu = "".join(cpu.split("(TM)"))
+        cpu = "".join(cpu.split("CPU "))
+        # version = subprocess.check_output(["lsb_release", "-sr"]).decode()[:-1]
         user = subprocess.check_output(["whoami"]).decode()[:-1]
+        disk = subprocess.check_output("df -h -x aufs -x tmpfs -x overlay -x drvfs --total 2>/dev/null | tail -1",
+                                       shell=True).decode()[:-3].split(" ")
+        disk_output = ""
+        count = 0
+        for each in disk:
+            if each != "":
+                count += 1
+                if count == 2:
+                    disk_output = each
+                elif count == 3:
+                    disk_output = each + " / " + disk_output
+                    break
 
         info = """Welcome, %s!
 OS: %s
-VERSION: %s
 CPU: %s
-RAM: %s GB""" % (user, os, version, cpu, mem)
+RAM: %s GB
+DISK USAGE: %s""" % (user, os, cpu, mem, disk_output)
 
         self.obj.set_label(info)
         self.obj.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(0.015,
@@ -80,6 +95,18 @@ RAM: %s GB""" % (user, os, version, cpu, mem)
         self.obj.set_margin_bottom(gcde.common.scale(0.0073, height))
         self.obj.set_margin_left(gcde.common.scale(0.006, width))
         self.obj.set_margin_right(gcde.common.scale(0.006, width))
+
+        color = gcde.tile.Tile()
+        color = color.__get_internal_obj__()[0].props.style.background[0].get_rgba()
+        color = Gdk.Color.from_floats(color[0], color[1], color[2])
+        color = Gdk.RGBA.from_color(color)
+        self.obj.override_background_color(Gtk.StateFlags.NORMAL, color)
+
+
+
+        # Remember to clean up after yourselves boys and girls!
+        del cpu,os,user,mem,disk,disk_output,points,count,each,info,color
+
 
     def run(self, widget):
         """run whatever command needed"""
