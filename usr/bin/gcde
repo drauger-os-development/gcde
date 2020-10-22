@@ -26,7 +26,7 @@ import sys
 import os
 import subprocess
 import gcde
-VERSION = "0.0.1-alpha0"
+VERSION = "0.0.2-alpha0"
 HELP = """GCDE, Version %s
 
 \t-h, --help\t\tPrint this help dialog and exit.
@@ -46,13 +46,19 @@ def cmd_exist(command):
 
 def main():
     """main runner for GCDE"""
+    home = os.getenv("HOME")
     os.putenv("XDG_CURRENT_DESKTOP", "GCDE")
+    os.putenv("XDG_CONFIG_DIRS", "/etc/xdg:/etc/xdg")
+    os.putenv("XDG_DATA_DIRS", home + "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share:/var/lib/snapd/desktop:/usr/share")
     path = cmd_exist("xfwm4")
     if not path:
         path = cmd_exist("openbox")
     command = [path, "--replace"]
     subprocess.Popen(command)
+    command = ["/usr/bin/xfdesktop", "--display", os.getenv("DISPLAY")]
+    subprocess.Popen(command)
     subprocess.Popen(["/usr/bin/xset", "s", "off"])
+    del path,home,command
     subprocess.check_output(["/usr/share/gcde/engine.py"])
 
 
