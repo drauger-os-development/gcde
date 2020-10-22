@@ -22,6 +22,7 @@
 #
 #
 """Common functions"""
+import sys
 from ctypes import cdll, byref, create_string_buffer
 
 
@@ -38,3 +39,8 @@ def set_procname(newname):
     buff = create_string_buffer(10) #Note: One larger than the name (man prctl says that)
     buff.value = bytes(newname, 'utf-8')               #Null terminated string as it should be
     libc.prctl(15, byref(buff), 0, 0, 0) #Refer to "#define" of "/usr/include/linux/prctl.h" for the misterious value 16 & arg[3..5] are zero as the man page says.
+
+
+def eprint(*args, **kwargs):
+    """Make it easier for us to print to stderr"""
+    print(*args, file=sys.stderr, **kwargs)
