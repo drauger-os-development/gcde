@@ -37,8 +37,8 @@ ARGC = len(sys.argv)
 
 def cmd_exist(command):
     """Check if command exists"""
-    path = os.getenv("PATH")
-    for each in PATH:
+    path = os.getenv("PATH").split(":")
+    for each in path:
         if os.path.exists(each + "/" + command):
             return each + "/" + command
     return ""
