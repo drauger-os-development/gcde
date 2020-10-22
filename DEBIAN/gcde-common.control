@@ -1,0 +1,17 @@
+Package: gcde-common
+Version: 0.0.1-alpha0
+Maintainer: Thomas Castleman <contact@draugeros.org>
+Section: admin
+Homepage: https://github.com/drauger-os-development/gcde
+Architecture: all
+Priority: optional
+License: GPL-2+
+Depends: gir1.2-gtk-3.0 (>=3.24.5), python3
+Description: GCDE Desktop - Common Files
+ GCDE is a desktop that gives Linux a game console look and feel. It's easy to use,
+ lightweight, and hackable.
+ .
+ This package contains common files, such as important libaries and assets.
+
+
+
