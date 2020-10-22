@@ -1,5 +1,6 @@
 #!/bin/bash
-cp DEBIAN/gcde-dekstop.control DEBIAN/control
+set -eE
+cp DEBIAN/gcde-desktop.control DEBIAN/control
 VERSION=$(cat DEBIAN/control | grep 'Version: ' | sed 's/Version: //g')
 PAK=$(cat DEBIAN/control | grep 'Package: ' | sed 's/Package: //g')
 ARCH=$(cat DEBIAN/control | grep 'Architecture: '| sed 's/Architecture: //g')
@@ -66,7 +67,7 @@ fi
 cp -R DEBIAN ../"$FOLDER"/DEBIAN
 cd ..
 #DELETE STUFF HERE
-rm -rf"$FOLDER"/usr/lib
+rm -rf "$FOLDER"/usr/lib
 #build the shit
 rm "$FOLDER"/DEBIAN/gcde-common.control "$FOLDER"/DEBIAN/gcde-common.install "$FOLDER"/DEBIAN/gcde-desktop.control
 dpkg-deb --build "$FOLDER"
@@ -81,11 +82,10 @@ mv ../"$FOLDER" ../"$NEW_FOLDER"
 mv DEBIAN/control ../"$NEW_FOLDER"/DEBIAN/control
 cp DEBIAN/gcde-common.install ../"$NEW_FOLDER"/DEBIAN/gcde-common.install
 cd ..
-rm "$NEW_FOLDER"/DEBIAN/gcde-desktop.install
 rm -rf "$NEW_FOLDER"/usr/share
-rm -rf "$NEW_FOLDER"/bin
+rm -rf "$NEW_FOLDER"/usr/bin
 rm -rf "$NEW_FOLDER"/etc
 mkdir "$NEW_FOLDER"/usr/lib
-cp -R gcde/usr/lib "$NEW_FOLDER"/usr/lib/
+cp -R gcde/usr/lib "$NEW_FOLDER"/usr
 dpkg-deb --build "$NEW_FOLDER"
 rm -rf "$NEW_FOLDER"
