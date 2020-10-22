@@ -48,7 +48,7 @@ class sys_info_display(gcde.tile.Tile):
 
     def make(self, global_settings, width, height):
         """Make Sys Info Panel"""
-        mem = list(str(psutil.virtual_memory().total / (10 ** 9)))
+        mem = list(str(psutil.virtual_memory().total / (1.074 * 10 ** 9)))
         points = 0
         for each in enumerate(mem):
             if mem[each[0] - points] == ".":
@@ -84,7 +84,7 @@ class sys_info_display(gcde.tile.Tile):
         info = """Welcome, %s!
 OS: %s
 CPU: %s
-RAM: %s GB
+RAM: %s GiB
 DISK USAGE: %s""" % (user, os, cpu, mem, disk_output)
 
         self.obj.set_label(info)
