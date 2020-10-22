@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+#  gcde
+#
+#  Copyright 2020 Thomas Castleman <contact@draugeros.org>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#
+#
+"""GCDE Launch File"""
+import sys
+import os
+import subprocess
+import gcde
+VERSION = "0.0.1-alpha0"
+HELP = """GCDE, Version %s
+
+\t-h, --help\t\tPrint this help dialog and exit.
+\t-s, --start\t\tStart GCDE
+\t-v, --version\t\tPrint version and exit
+""" % (VERSION)
+ARGC = len(sys.argv)
+
+def cmd_exist(command):
+    """Check if command exists"""
+    path = os.getenv("PATH")
+    for each in PATH:
+        if os.path.exists(each + "/" + command):
+            return each + "/" + command
+    return ""
+
+
+def main():
+    """main runner for GCDE"""
+    os.putenv("XDG_CURRENT_DESKTOP", "GCDE")
+    path = cmd_exist("xfwm4")
+    if not path:
+        path = cmd_exist("openbox")
+    command = [path, "--replace"]
+    subprocess.Popen(command)
+    subprocess.Popen(["/usr/bin/xset", "s", "off"])
+    subprocess.check_output(["/usr/share/gcde/engine.py"])
+
+
+if ARGC > 1:
+    if sys.argv[1] in ("-h", "--help"):
+        print(HELP)
+    elif sys.argv[1] in ("-v", "--version"):
+        print(VERSION)
+    elif sys.argv[1] in ("-s", "--start"):
+        main()
+    else:
+        gcde.common.eprint("ERROR: `%s': flag not recognized" % (sys.argv[1]))

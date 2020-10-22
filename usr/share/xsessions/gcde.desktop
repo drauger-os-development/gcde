@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=GCDE
+Comment=GTK+ Console Desktop Environment
+Exec=/usr/bin/gcde --start
+Icon=steam
+Type=Application
