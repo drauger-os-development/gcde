@@ -226,7 +226,7 @@ class Matrix(Gtk.Window):
 
     def __place_tile__(self, tile, scale=True):
         """Place tile in matrix"""
-        tile.make(self.settings, width, height)
+        tile.make(copy.deepcopy(self.settings), width, height)
         tile_obj = tile.__get_internal_obj__()
         tile_settings = tile.get_settings()
         try:
