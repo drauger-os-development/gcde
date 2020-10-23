@@ -33,6 +33,7 @@ import cairo
 from subprocess import check_output, Popen
 import inspect
 import copy
+import shlex
 import gcde
 import plugins
 
@@ -130,6 +131,8 @@ class Matrix(Gtk.Window):
         self.reboot = gcde.tile.new(self.reboot)
         self.poweroff = gcde.tile.new(self.shutdown)
         self.log_out = gcde.tile.new(self.log_out)
+
+        subprocess.Popen(["/usr/bin/wmctrl", "-n", "1"])
 
         self.main("clicked")
 
@@ -467,7 +470,9 @@ class Matrix(Gtk.Window):
                     name = each1[5:]
                 elif each1[:5] == "Icon=":
                     icon = each1[5:]
-            tile_settings = {"exec":["xdg-open", prefix + each],
+                elif each1[:5] == "Exec=":
+                    execute = shlex.split(each1[5:])
+            tile_settings = {"exec":execute,
                              "icon":icon, "name":name,
                              "X":x, "Y":y, "width":w, "height":h}
             tiles.append(gcde.tile.new(tile_settings))

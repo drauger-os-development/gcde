@@ -25,6 +25,7 @@
 import sys
 import os
 import subprocess
+import time
 import gcde
 VERSION = "0.0.2-alpha0"
 HELP = """GCDE, Version %s
@@ -55,10 +56,13 @@ def main():
         path = cmd_exist("openbox")
     command = [path, "--replace"]
     subprocess.Popen(command)
+    subprocess.Popen(["/usr/bin/compton", "-b"])
     command = ["/usr/bin/xfdesktop", "--display", os.getenv("DISPLAY")]
     subprocess.Popen(command)
     subprocess.Popen(["/usr/bin/xset", "s", "off"])
     del path,home,command
+    time.sleep(2)
+    subprocess.Popen(["/usr/bin/wmctrl", "-n", "1"])
     subprocess.check_output(["/usr/share/gcde/engine.py"])
 
 
