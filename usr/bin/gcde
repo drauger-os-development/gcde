@@ -27,7 +27,7 @@ import os
 import subprocess
 import time
 import gcde
-VERSION = "0.0.2-alpha0"
+VERSION = "0.0.4-alpha0"
 HELP = """GCDE, Version %s
 
 \t-h, --help\t\tPrint this help dialog and exit.
