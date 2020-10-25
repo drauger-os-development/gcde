@@ -48,8 +48,16 @@ def cmd_exist(command):
 def main():
     """main runner for GCDE"""
     home = os.getenv("HOME")
+    # Set up several environment variables
     os.putenv("XDG_CURRENT_DESKTOP", "GCDE")
+    os.putenv("DESKTOP_SESSION", "GCDE")
     os.putenv("XDG_CONFIG_DIRS", "/etc/xdg:/etc/xdg")
+    if os.getenv("XDG_CONFIG_HOME") == "x":
+        os.putenv("XDG_CONFIG_HOME", home + "/.config")
+    if os.getenv("XDG_CACHE_HOME") == "x":
+        os.putenv("XDG_CACHE_HOME", home + "/.cache")
+    if cmd_exist("xdg-user-dirs-update"):
+        subprocess.Popen("xdg-user-dirs-update")
     os.putenv("XDG_DATA_DIRS", home + "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share:/var/lib/snapd/desktop:/usr/share")
     path = cmd_exist("xfwm4")
     if not path:

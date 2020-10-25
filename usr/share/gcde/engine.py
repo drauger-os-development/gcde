@@ -34,6 +34,7 @@ from subprocess import check_output, Popen
 import inspect
 import copy
 import shlex
+import multiprocessing
 import gcde
 import plugins
 
@@ -81,6 +82,108 @@ def get_tiles():
     with open(global_tiles, "r") as file:
         # shutil.copy(global_tiles, local_tiles)
         return json.load(file)
+
+
+def launch_autostarters():
+    """Launch Autostart apps"""
+    prefix = home + ".config/autostart/"
+    file_list = os.listdir(prefix)
+    for each in file_list:
+        skip = False
+        with open(prefix + each, "r") as file:
+            data = file.read().split("\n")
+        for each1 in data:
+            if "X-GNOME-Autostart-enabled=false" == each1:
+                skip = True
+                break
+        if skip:
+            continue
+        for each1 in data:
+            if each1[:5] == "Exec=":
+                execute = shlex.split(each1[5:])
+                break
+        subprocess.Popen(execute)
+    for each in file_list:
+        skip = False
+        with open(prefix + each, "r") as file:
+            data = file.read()
+        if "X-GNOME-Autostart-enabled=" not in data:
+            data = data.split("\n")
+            data.append("X-GNOME-Autostart-enabled=false")
+            data = "\n".join(data)
+        os.remove(prefix + each)
+        with open(prefix + each, "w") as file:
+            file.write(data)
+
+
+def autostart_enabled(file):
+    """Get whether autostart is enabled for a file"""
+    with open(path, "r") as file:
+        data = file.read().split("\n")
+    for each in enumerate(data):
+        if "X-GNOME-Autostart-enabled" in data[each[0]]:
+            data[each[0]] = data[each[0]].split("=")
+            if data[each[0]][1] == "false":
+                return False
+            else:
+                return True
+    data.append("X-GNOME-Autostart-enabled=false")
+    data = "\n".join(data)
+    os.remove(path)
+    with open(path, "w") as file:
+        file.write(data)
+    return False
+
+
+
+def toggle_autostart(path):
+    """Toggle Autostart setting"""
+    with open(path, "r") as file:
+        data = file.read().split("\n")
+    for each in enumerate(data):
+        if "X-GNOME-Autostart-enabled" in data[each[0]]:
+            data[each[0]] = data[each[0]].split("=")
+            if data[each[0]][1] == "false":
+                data[each[0]][1] = "true"
+            else:
+                data[each[0]][1] = "false"
+            data[each[0]] = "=".join(data[each[0]])
+    data = "\n".join(data)
+    os.remove(path)
+    with open(path, "w") as file:
+        file.write(data)
+
+
+def desktop_to_json(path, x, y, w, h, extra_key="Hidden="):
+    """Convert Desktop file to GCDE Tile Json"""
+    hidden = (extra_key, len(extra_key))
+    with open(path, "r") as file:
+        data = file.read().split("\n")
+    for each in range(len(data) - 1, -1, -1):
+        if data[each] == "":
+            del data[each]
+    if len(data) < 4:
+        return {}
+    tile_settings = {}
+    for each in data:
+        if each[:5] == "Name=":
+            tile_settings["name"] = each[5:]
+        elif each[:5] == "Icon=":
+            tile_settings["icon"] = each[5:]
+        elif each[:hidden[1]] == hidden[0]:
+            if each[hidden[1]:] == "true":
+                tile_settings["hidden"] = True
+            else:
+                tile_settings["hidden"] = False
+        elif each[:5] == "Exec=":
+            tile_settings["execute"] = shlex.split(each[5:])
+    if "hidden" not in tile_settings:
+        tile_settings["hidden"] = False
+    tile_settings["X"] = x
+    tile_settings["Y"] = y
+    tile_settings["width"] = w
+    tile_settings["height"] = h
+    return tile_settings
 
 
 class Matrix(Gtk.Window):
@@ -133,6 +236,8 @@ class Matrix(Gtk.Window):
         self.log_out = gcde.tile.new(self.log_out)
 
         subprocess.Popen(["/usr/bin/wmctrl", "-n", "1"])
+        proc = multiprocessing.Process(target=launch_autostarters)
+        proc.start()
 
         self.main("clicked")
 
@@ -223,7 +328,7 @@ class Matrix(Gtk.Window):
         for each in plug_objs:
             self.__place_tile__(each, scale=False)
 
-        del plug_objs
+        del plug_objs,plugin_list,each
 
         self.show_all()
 
@@ -243,6 +348,8 @@ class Matrix(Gtk.Window):
                 tile_obj[0].connect("clicked", self.session_manager)
             elif tile_settings["exec"][0].lower() == "restart":
                 tile_obj[0].connect("clicked", self.restart)
+            elif tile_settings["exec"][0].lower() == "autostart-settings":
+                tile_obj[0].connect("clicked", self.autostart_settings)
             else:
                 tile_obj[0].connect("clicked", tile.run)
         except TypeError:
@@ -256,6 +363,50 @@ class Matrix(Gtk.Window):
         else:
             self.grid.attach(tile_obj[0], tile_obj[1], tile_obj[2], tile_obj[3],
                              tile_obj[4])
+
+    def autostart_settings(self, widget):
+        """Window to define which files should be autostart and which shouldn't"""
+        self.clear_window()
+
+        self.make_scrolling("clicked")
+        prefix = home + ".config/autostart/"
+        w = 1
+        h = 1
+        x = 0
+        y = 2
+        file_list = os.listdir(prefix)
+
+        title = Gtk.Label()
+        title.set_markup("\n\tAutostart Applications\t\n")
+        title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(0.03,
+                                                                    height))))
+        self.grid.attach(title, 0, 0, 1, 2)
+
+        for each in file_list:
+            data = desktop_to_json(prefix + each, x, y, w, h,
+                                   extra_key="X-GNOME-Autostart-enabled=")
+            if len(data) == 0:
+                continue
+            check_box = Gtk.CheckButton.new_with_label(data["name"])
+            check_box.set_active(data["hidden"])
+            check_box.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(0.02,
+                                                                        height))))
+            self.grid.attach(check_box, data["X"], data["Y"], data["width"],
+                             data["height"])
+            y += 1
+
+        back_button = {"exec":["settings"],
+    				"icon":"application-exit",
+    				"name":"Back",
+    				"X":0,
+    				"Y":y,
+    				"width":1,
+    				"height":1}
+        back_button = gcde.tile.new(back_button)
+        self.__place_tile__(back_button, scale=False)
+
+        del w,h,x,y,file_list,prefix,check_box,each,data,title,back_button
+        self.show_all()
 
     def settings_window(self, widget):
         """Settings Window"""
@@ -365,19 +516,30 @@ class Matrix(Gtk.Window):
     			"name":"Save and Restart GCDE",
     			"X":0,
     			"Y":19,
-    			"width":int(width / 2),
+    			"width":int(width / 3),
     			"height":1}
+        autolaunch = {"exec":["autostart-settings"],
+                      "icon":"xfce4-session",
+                      "name":"Autostart Applications",
+                      "X":int(width / 3),
+                      "Y":19,
+                      "width":int(width / 3),
+                      "height":1}
         quit = {"exec":["main"],
     			"icon":"application-exit",
     			"name":"Exit",
-    			"X":int(width / 2),
+    			"X":int(width / 3) * 2,
     			"Y":19,
-    			"width":int(width / 2),
+    			"width":int(width / 3),
     			"height":1}
         sars = gcde.tile.new(sars)
         quit = gcde.tile.new(quit)
+        autolaunch = gcde.tile.new(autolaunch)
         self.__place_tile__(sars, scale=False)
+        self.__place_tile__(autolaunch, scale=False)
         self.__place_tile__(quit, scale=False)
+
+        del theming_defaults,gtk_themes,icon_themes,sub_heading,label
 
         self.show_all()
 
