@@ -24,21 +24,40 @@
 """Engine for GCDE"""
 GTK_VERSION = "3.0"
 import os
-import shutil
 import json
-import gi
-gi.require_version('Gtk', GTK_VERSION)
-from gi.repository import Gtk, Gdk, Pango
-import cairo
-from subprocess import check_output, Popen
-import inspect
 import copy
 import shlex
 import multiprocessing
+import sys
+from subprocess import check_output, Popen
+import gi
+gi.require_version('Gtk', GTK_VERSION)
+from gi.repository import Gtk, Pango
+import cairo
 import gcde
 import plugins
 
 gcde.common.set_procname("gcde")
+
+# This block makes it MUCH easier to test functionality without having to log
+# out then log into GCDE
+if len(sys.argv) > 1:
+    for each in sys.argv:
+        if each in ("--debug", "-d", "--testing", "-t"):
+            debug = True
+            break
+        debug = False
+    for each in enumerate(sys.argv):
+        if sys.argv[each[0]] in ("--resolution", "-r"):
+            res_override = True
+            width = int(sys.argv[each[0] + 1].split("x")[0])
+            height = int(sys.argv[each[0] + 1].split("x")[1])
+            break
+        res_override = False
+else:
+    debug = False
+    res_override = False
+
 
 # Define configuration location
 home = os.getenv("HOME")
@@ -51,11 +70,12 @@ global_tiles = "../../../etc/gcde/default-tiles.json"
 themes_file = home + ".config/gtk-3.0/settings.ini"
 
 # Get screen resolution for proper scaling
-results = check_output(['xrandr']).decode().split("current")[1].split(",")[0]
-width = results.split("x")[0].strip()
-height = results.split("x")[1].strip()
-width = int(width)
-height = int(height)
+if not res_override:
+    results = check_output(['xrandr']).decode().split("current")[1].split(",")[0]
+    width = results.split("x")[0].strip()
+    height = results.split("x")[1].strip()
+    width = int(width)
+    height = int(height)
 
 # Make config dir
 try:
@@ -93,7 +113,7 @@ def launch_autostarters():
         with open(prefix + each, "r") as file:
             data = file.read().split("\n")
         for each1 in data:
-            if "X-GNOME-Autostart-enabled=false" == each1:
+            if each1 == "X-GNOME-Autostart-enabled=false":
                 skip = True
                 break
         if skip:
@@ -116,7 +136,7 @@ def launch_autostarters():
             file.write(data)
 
 
-def autostart_enabled(file):
+def autostart_enabled(path):
     """Get whether autostart is enabled for a file"""
     with open(path, "r") as file:
         data = file.read().split("\n")
@@ -125,8 +145,7 @@ def autostart_enabled(file):
             data[each[0]] = data[each[0]].split("=")
             if data[each[0]][1] == "false":
                 return False
-            else:
-                return True
+            return True
     data.append("X-GNOME-Autostart-enabled=false")
     data = "\n".join(data)
     os.remove(path)
@@ -203,41 +222,34 @@ class Matrix(Gtk.Window):
         self.background_launched = False
 
         self.reboot = {"exec":["reboot"],
-    			"icon":"system-reboot",
-    			"name":"Reboot",
-    			"X":0,
-    			"Y":2,
-    			"width":int(width / 4),
-    			"height":1}
+                       "icon":"system-reboot", "name":"Reboot", "X":0, "Y":2,
+                       "width":int(width / 4), "height":1}
         self.log_out = {"exec":["./logout.py"],
-    			"icon":"system-log-out",
-    			"name":"Log Out",
-    			"X":int(width / 4),
-    			"Y":2,
-    			"width":int(width / 4),
-    			"height":1}
+                        "icon":"system-log-out", "name":"Log Out",
+                        "X":int(width / 4), "Y":2, "width":int(width / 4),
+                        "height":1}
         self.shutdown = {"exec":["poweroff"],
-    			"icon":"gnome-shutdown",
-    			"name":"Shutdown",
-    			"X":int(width / 4) * 2,
-    			"Y":2,
-    			"width":int(width / 4),
-    			"height":1}
+                         "icon":"gnome-shutdown",
+                         "name":"Shutdown",
+                         "X":int(width / 4) * 2,
+                         "Y":2, "width":int(width / 4),
+                         "height":1}
         self.back = {"exec":["main"],
-    			"icon":"application-exit",
-    			"name":"Back",
-    			"X":int(width / 4) * 3,
-    			"Y":2,
-    			"width":int(width / 4),
-    			"height":1}
+                     "icon":"application-exit",
+                     "name":"Back",
+                     "X":int(width / 4) * 3,
+                     "Y":2,
+                     "width":int(width / 4),
+                     "height":1}
         self.back = gcde.tile.new(self.back)
         self.reboot = gcde.tile.new(self.reboot)
         self.poweroff = gcde.tile.new(self.shutdown)
         self.log_out = gcde.tile.new(self.log_out)
 
-        subprocess.Popen(["/usr/bin/wmctrl", "-n", "1"])
-        proc = multiprocessing.Process(target=launch_autostarters)
-        proc.start()
+        if not debug:
+            Popen(["/usr/bin/wmctrl", "-n", "1"])
+            proc = multiprocessing.Process(target=launch_autostarters)
+            proc.start()
 
         self.main("clicked")
 
@@ -262,7 +274,7 @@ class Matrix(Gtk.Window):
         self.clear_window()
 
         self.connect('destroy', Gtk.main_quit)
-        self.connect('draw', self.draw)
+        self.connect('draw', self.make)
 
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
@@ -280,7 +292,7 @@ class Matrix(Gtk.Window):
         title = Gtk.Label()
         title.set_markup("\n\tAre you sure?\t\n")
         title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(0.05,
-                                                                    height))))
+                                                                                      height))))
         self.grid.attach(title, 0, 0, width, 2)
 
         self.__place_tile__(self.log_out, scale=False)
@@ -290,7 +302,8 @@ class Matrix(Gtk.Window):
 
         self.show_all()
 
-    def draw(self, widget, context):
+    def make(self, widget, context):
+        """Draw window background"""
         context.set_source_rgba(0, 0, 0, 0)
         context.set_operator(cairo.OPERATOR_SOURCE)
         context.paint()
@@ -317,7 +330,7 @@ class Matrix(Gtk.Window):
                     plug_objs.append(plug_new.plugin_setup(copy.deepcopy(self.settings)))
                 elif plug_new.PLUGIN_TYPE >= 2:
                     plug_objs.append(plug_new.plugin_setup({"loc":copy.deepcopy(self.tiles[each]),
-                                                    "global":copy.deepcopy(self.settings)}))
+                                                            "global":copy.deepcopy(self.settings)}))
             except KeyError:
                 continue
 
@@ -328,7 +341,7 @@ class Matrix(Gtk.Window):
         for each in plug_objs:
             self.__place_tile__(each, scale=False)
 
-        del plug_objs,plugin_list,each
+        del plug_objs, plugin_list, each
 
         self.show_all()
 
@@ -379,7 +392,7 @@ class Matrix(Gtk.Window):
         title = Gtk.Label()
         title.set_markup("\n\tAutostart Applications\t\n")
         title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(0.03,
-                                                                    height))))
+                                                                                      height))))
         self.grid.attach(title, 0, 0, 1, 2)
 
         for each in file_list:
@@ -390,22 +403,17 @@ class Matrix(Gtk.Window):
             check_box = Gtk.CheckButton.new_with_label(data["name"])
             check_box.set_active(data["hidden"])
             check_box.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(0.02,
-                                                                        height))))
+                                                                                              height))))
             self.grid.attach(check_box, data["X"], data["Y"], data["width"],
                              data["height"])
             y += 1
 
-        back_button = {"exec":["settings"],
-    				"icon":"application-exit",
-    				"name":"Back",
-    				"X":0,
-    				"Y":y,
-    				"width":1,
-    				"height":1}
+        back_button = {"exec":["settings"], "icon":"application-exit",
+                       "name":"Back", "X":0, "Y":y, "width":1, "height":1}
         back_button = gcde.tile.new(back_button)
         self.__place_tile__(back_button, scale=False)
 
-        del w,h,x,y,file_list,prefix,check_box,each,data,title,back_button
+        del w, h, x, y, file_list, prefix, check_box, each, data, title, back_button
         self.show_all()
 
     def settings_window(self, widget):
@@ -420,55 +428,55 @@ class Matrix(Gtk.Window):
         title = Gtk.Label()
         title.set_markup("\n\tSettings\t\n")
         title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(0.05,
-                                                                    height))))
+                                                                                      height))))
         self.grid.attach(title, 0, 0, width, 2)
 
         icon_title = Gtk.Label()
         icon_title.set_markup("\n\tIcon Size\t\n")
         icon_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(sub_heading,
-                                                                    height))))
+                                                                                           height))))
         self.grid.attach(icon_title, 0, 1, width, 2)
 
         self.icon_scaler = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 4,
-                                               200, 2)
+                                                    200, 2)
         self.icon_scaler.set_draw_value(True)
         self.icon_scaler.set_value(self.settings["icon size"])
         self.icon_scaler.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(sub_heading,
-                                                                    height))))
+                                                                                                 height))))
         self.grid.attach(self.icon_scaler, 0, 2, width, 2)
 
         menu_title = Gtk.Label()
         menu_title.set_markup("\n\tApplication Menu Tile Size\t\n")
         menu_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(sub_heading,
-                                                                    height))))
+                                                                                           height))))
         self.grid.attach(menu_title, 0, 3, width, 2)
 
         X_title = Gtk.Label()
         X_title.set_markup("\n\tWidth\t\n")
         X_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
-                                                                    height))))
+                                                                                        height))))
         self.grid.attach(X_title, 0, 4, width, 2)
 
         Y_title = Gtk.Label()
         Y_title.set_markup("\n\tHeight\t\n")
         Y_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
-                                                                    height))))
+                                                                                        height))))
         self.grid.attach(Y_title, 0, 6, width, 2)
 
         self.X_scaler = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1,
-                                               10, 1)
+                                                 10, 1)
         self.X_scaler.set_draw_value(True)
         self.X_scaler.set_value(self.settings["menu"]["width"])
         self.X_scaler.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(sub_heading,
-                                                                    height))))
+                                                                                              height))))
         self.grid.attach(self.X_scaler, 0, 5, width, 2)
 
         self.Y_scaler = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1,
-                                               10, 1)
+                                                 10, 1)
         self.Y_scaler.set_draw_value(True)
         self.Y_scaler.set_value(self.settings["menu"]["height"])
         self.Y_scaler.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(sub_heading,
-                                                                    height))))
+                                                                                              height))))
         self.grid.attach(self.Y_scaler, 0, 7, width, 2)
 
         theming_defaults = get_theming_defaults()
@@ -478,13 +486,13 @@ class Matrix(Gtk.Window):
         theming_title = Gtk.Label()
         theming_title.set_markup("\n\tTheming\t\n")
         theming_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(sub_heading,
-                                                                    height))))
+                                                                                              height))))
         self.grid.attach(theming_title, 0, 9, width, 2)
 
         gtk_theming_title = Gtk.Label()
         gtk_theming_title.set_markup("\n\tGtk Theme\t\n")
         gtk_theming_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
-                                                                    height))))
+                                                                                                  height))))
         self.grid.attach(gtk_theming_title, 0, 11, width, 2)
 
         self.gtk_theme_chooser = Gtk.ComboBoxText.new()
@@ -492,14 +500,14 @@ class Matrix(Gtk.Window):
             self.gtk_theme_chooser.append(each, each)
         self.gtk_theme_chooser.set_active_id(theming_defaults["gtk-theme-name"])
         self.gtk_theme_chooser.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
-                                                                    height))))
+                                                                                                       height))))
 
         self.grid.attach(self.gtk_theme_chooser, 0, 13, width, 2)
 
         icon_theming_title = Gtk.Label()
         icon_theming_title.set_markup("\n\tIcon Theme\t\n")
         icon_theming_title.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
-                                                                    height))))
+                                                                                                   height))))
         self.grid.attach(icon_theming_title, 0, 15, width, 2)
 
         self.icon_theme_chooser = Gtk.ComboBoxText.new()
@@ -507,17 +515,17 @@ class Matrix(Gtk.Window):
             self.icon_theme_chooser.append(each.lower(), each)
         self.icon_theme_chooser.set_active_id(theming_defaults["gtk-icon-theme-name"])
         self.icon_theme_chooser.override_font(Pango.FontDescription("Open Sans %s" % (gcde.common.scale(label,
-                                                                    height))))
+                                                                                                        height))))
 
         self.grid.attach(self.icon_theme_chooser, 0, 17, width, 2)
 
         sars = {"exec":["restart"],
-    			"icon":"system-reboot",
-    			"name":"Save and Restart GCDE",
-    			"X":0,
-    			"Y":19,
-    			"width":int(width / 3),
-    			"height":1}
+                "icon":"system-reboot",
+                "name":"Save and Restart GCDE",
+                "X":0,
+                "Y":19,
+                "width":int(width / 3),
+                "height":1}
         autolaunch = {"exec":["autostart-settings"],
                       "icon":"xfce4-session",
                       "name":"Autostart Applications",
@@ -526,12 +534,12 @@ class Matrix(Gtk.Window):
                       "width":int(width / 3),
                       "height":1}
         quit = {"exec":["main"],
-    			"icon":"application-exit",
-    			"name":"Exit",
-    			"X":int(width / 3) * 2,
-    			"Y":19,
-    			"width":int(width / 3),
-    			"height":1}
+                "icon":"application-exit",
+                "name":"Exit",
+                "X":int(width / 3) * 2,
+                "Y":19,
+                "width":int(width / 3),
+                "height":1}
         sars = gcde.tile.new(sars)
         quit = gcde.tile.new(quit)
         autolaunch = gcde.tile.new(autolaunch)
@@ -539,7 +547,7 @@ class Matrix(Gtk.Window):
         self.__place_tile__(autolaunch, scale=False)
         self.__place_tile__(quit, scale=False)
 
-        del theming_defaults,gtk_themes,icon_themes,sub_heading,label
+        del theming_defaults, gtk_themes, icon_themes, sub_heading, label
 
         self.show_all()
 
@@ -615,7 +623,6 @@ class Matrix(Gtk.Window):
                         skip = True
                         break
                 elif "OnlyShowIn" in each1:
-                    trash = each1.split("=")
                     if "gcde" not in each1.lower():
                         skip = True
                         break
@@ -623,7 +630,7 @@ class Matrix(Gtk.Window):
                     if each1[-4:].lower() == "true":
                         skip = True
                         break
-                elif "" == each1:
+                elif each1 == "":
                     break
             if skip:
                 continue
@@ -646,8 +653,8 @@ class Matrix(Gtk.Window):
         for each in tiles:
             self.__place_tile__(each, scale=False)
         # Try to free some memeory
-        del tiles
-        del file_list
+        del tiles, file_list, each, each1, tile_settings, back, x, y, width_max
+        del w, h, prefix, execute, icon, name, data
 
         self.show_all()
 
