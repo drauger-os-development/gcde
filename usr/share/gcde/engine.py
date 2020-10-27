@@ -84,16 +84,6 @@ except FileExistsError:
     pass
 
 
-def get_settings():
-    """Get settings, global or local"""
-    if os.path.exists(local_settings):
-        with open(local_settings, "r") as file:
-            return json.load(file)
-    with open(global_settings, "r") as file:
-        # shutil.copy(global_settings, local_settings)
-        return json.load(file)
-
-
 def get_tiles():
     """Get tile configurations, global or local"""
     if os.path.exists(local_tiles):
@@ -216,7 +206,7 @@ class Matrix(Gtk.Window):
         self.grid.set_column_spacing(1)
         self.grid.set_row_spacing(1)
         self.add(self.grid)
-        self.settings = get_settings()
+        self.settings = gcde.common.get_settings(local_settings)
         self.tiles = get_tiles()
         self.scrolling = False
         self.background_launched = False

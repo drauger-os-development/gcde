@@ -23,6 +23,8 @@
 #
 """Common functions"""
 import sys
+import os
+import json
 from ctypes import cdll, byref, create_string_buffer
 
 
@@ -44,3 +46,13 @@ def set_procname(newname):
 def eprint(*args, **kwargs):
     """Make it easier for us to print to stderr"""
     print(*args, file=sys.stderr, **kwargs)
+
+
+def get_settings(local_settings, global_settings="../../../etc/gcde/defaults-global.json"):
+    """Get settings, global or local"""
+    if os.path.exists(local_settings):
+        with open(local_settings, "r") as file:
+            return json.load(file)
+    with open(global_settings, "r") as file:
+        # shutil.copy(global_settings, local_settings)
+        return json.load(file)

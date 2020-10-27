@@ -27,7 +27,7 @@ import os
 import subprocess
 import time
 import gcde
-VERSION = "0.0.4-alpha0"
+VERSION = "0.0.6-alpha0"
 HELP = """GCDE, Version %s
 
 \t-h, --help\t\tPrint this help dialog and exit.
@@ -35,6 +35,12 @@ HELP = """GCDE, Version %s
 \t-v, --version\t\tPrint version and exit
 """ % (VERSION)
 ARGC = len(sys.argv)
+
+# Define configuration location
+home = os.getenv("HOME")
+if home[-1] != "/":
+    home = home + "/"
+local_settings = home + ".config/gcde/global_settings.json"
 
 def cmd_exist(command):
     """Check if command exists"""
@@ -59,16 +65,22 @@ def main():
     if cmd_exist("xdg-user-dirs-update"):
         subprocess.Popen("xdg-user-dirs-update")
     os.putenv("XDG_DATA_DIRS", home + "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share:/var/lib/snapd/desktop:/usr/share")
-    path = cmd_exist("xfwm4")
+    wm = gcde.common.get_settings(local_settings)
+    if "window manager" in wm:
+        wm = wm["wm"]
+    path = cmd_exist(wm)
+    if not path:
+        path = cmd_exist("xfwm4")
     if not path:
         path = cmd_exist("openbox")
-    command = [path, "--replace"]
+    command = [path]
+    #command = [path, "--replace"]
     subprocess.Popen(command)
     subprocess.Popen(["/usr/bin/compton", "-b"])
     command = ["/usr/bin/xfdesktop", "--display", os.getenv("DISPLAY")]
     subprocess.Popen(command)
     subprocess.Popen(["/usr/bin/xset", "s", "off"])
-    del path,home,command
+    del path, home, command, wm
     time.sleep(2)
     subprocess.Popen(["/usr/bin/wmctrl", "-n", "1"])
     subprocess.check_output(["/usr/share/gcde/engine.py"])
