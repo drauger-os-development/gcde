@@ -1,5 +1,5 @@
 # gcde
-GTK+ Console Desktop Environment, a desktop environment to give Linux a game-console look and feel.
+GTK+ Console Desktop Environment (or, alternatively, Game Console Desktop Environment), is a desktop environment to give Linux a game-console look and feel.
 
 
 ## Goals
