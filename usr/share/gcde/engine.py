@@ -214,7 +214,7 @@ class Matrix(Gtk.Window):
         self.reboot = {"exec":["reboot"],
                        "icon":"system-reboot", "name":"Reboot", "X":0, "Y":2,
                        "width":int(width / 4), "height":1}
-        self.log_out = {"exec":["./logout.py"],
+        self.log_out = {"exec":["logout"],
                         "icon":"system-log-out", "name":"Log Out",
                         "X":int(width / 4), "Y":2, "width":int(width / 4),
                         "height":1}
@@ -343,6 +343,8 @@ class Matrix(Gtk.Window):
         try:
             if tile_settings["exec"][0].lower() == "settings":
                 tile_obj[0].connect("clicked", self.settings_window)
+            elif tile_settings["exec"][0].lower() == "logout":
+                tile_obj[0].connect("clicked", self.logout)
             elif tile_settings["exec"][0].lower() == "menu":
                 tile_obj[0].connect("clicked", self.menu)
             elif tile_settings["exec"][0].lower() == "main":
@@ -548,6 +550,13 @@ class Matrix(Gtk.Window):
             Popen(["/usr/share/gcde/restart.py"])
         except FileNotFoundError:
             Popen(["./restart.py"])
+
+    def logout(self, widget):
+        """Logout of GCDE"""
+        Gtk.main_quit("delete-event")
+        self.destroy()
+        # Probably the wrong way to do this, but it gets us back to the login screen
+        exit()
 
     def save_settings(self, widget):
         """Save settings to file"""
