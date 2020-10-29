@@ -85,14 +85,16 @@ def main(args=[]):
         path = cmd_exist("xfwm4")
     if not path:
         path = cmd_exist("openbox")
-    # command = [path]
     if not debug:
         command = [path, "--replace"]
+        if "xfwm4" in path:
+            command = command + ["--compositor=off"]
         subprocess.Popen(command)
         subprocess.Popen(["/usr/bin/compton", "-b"])
         command = ["/usr/bin/xfdesktop", "--display", os.getenv("DISPLAY")]
         subprocess.Popen(command)
         subprocess.Popen(["/usr/bin/xset", "s", "off"])
+        subprocess.Popen(["dbus-update-activation-environment", "--all"])
         time.sleep(2)
         subprocess.Popen(["/usr/bin/wmctrl", "-n", "1"])
     del path, home, command, wm
