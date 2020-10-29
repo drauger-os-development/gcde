@@ -65,8 +65,8 @@ if home[-1] != "/":
     home = home + "/"
 local_settings = home + ".config/gcde/global_settings.json"
 local_tiles = home + ".config/gcde/tiles.json"
-global_settings = "../../../etc/gcde/defaults-global.json"
-global_tiles = "../../../etc/gcde/default-tiles.json"
+global_settings = "/etc/gcde/defaults-global.json"
+global_tiles = "/etc/gcde/default-tiles.json"
 themes_file = home + ".config/gtk-3.0/settings.ini"
 
 # Get screen resolution for proper scaling

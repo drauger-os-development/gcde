@@ -27,11 +27,13 @@ import os
 import subprocess
 import time
 import gcde
-VERSION = "0.0.6-alpha0"
+VERSION = "0.0.9-alpha0"
 HELP = """GCDE, Version %s
 
 \t-h, --help\t\tPrint this help dialog and exit.
 \t-s, --start\t\tStart GCDE
+\t\t-d, --debug\t\t\tStart GCDE in debugging mode (USED FOR DEVELOPMENT AND TESTING)
+\t\t-r, --resolution\t\t\tOver-ride resolution GCDE uses.
 \t-v, --version\t\tPrint version and exit
 """ % (VERSION)
 ARGC = len(sys.argv)
@@ -42,6 +44,13 @@ if home[-1] != "/":
     home = home + "/"
 local_settings = home + ".config/gcde/global_settings.json"
 
+if len(sys.argv) > 1:
+    for each in sys.argv:
+        if each in ("--debug", "-d", "--testing", "-t"):
+            debug = True
+            break
+        debug = False
+
 def cmd_exist(command):
     """Check if command exists"""
     path = os.getenv("PATH").split(":")
@@ -51,9 +60,10 @@ def cmd_exist(command):
     return ""
 
 
-def main():
+def main(args=[]):
     """main runner for GCDE"""
     home = os.getenv("HOME")
+    command = []
     # Set up several environment variables
     os.putenv("XDG_CURRENT_DESKTOP", "GCDE")
     os.putenv("DESKTOP_SESSION", "GCDE")
@@ -67,23 +77,26 @@ def main():
     os.putenv("XDG_DATA_DIRS", home + "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share:/var/lib/snapd/desktop:/usr/share")
     wm = gcde.common.get_settings(local_settings)
     if "window manager" in wm:
-        wm = wm["wm"]
+        wm = wm["window manager"]
+    else:
+        wm = "xfwm4"
     path = cmd_exist(wm)
     if not path:
         path = cmd_exist("xfwm4")
     if not path:
         path = cmd_exist("openbox")
-    command = [path]
-    #command = [path, "--replace"]
-    subprocess.Popen(command)
-    subprocess.Popen(["/usr/bin/compton", "-b"])
-    command = ["/usr/bin/xfdesktop", "--display", os.getenv("DISPLAY")]
-    subprocess.Popen(command)
-    subprocess.Popen(["/usr/bin/xset", "s", "off"])
+    # command = [path]
+    if not debug:
+        command = [path, "--replace"]
+        subprocess.Popen(command)
+        subprocess.Popen(["/usr/bin/compton", "-b"])
+        command = ["/usr/bin/xfdesktop", "--display", os.getenv("DISPLAY")]
+        subprocess.Popen(command)
+        subprocess.Popen(["/usr/bin/xset", "s", "off"])
+        time.sleep(2)
+        subprocess.Popen(["/usr/bin/wmctrl", "-n", "1"])
     del path, home, command, wm
-    time.sleep(2)
-    subprocess.Popen(["/usr/bin/wmctrl", "-n", "1"])
-    subprocess.check_output(["/usr/share/gcde/engine.py"])
+    print(subprocess.check_output(["/usr/share/gcde/engine.py"]  + args))
 
 
 if ARGC > 1:
@@ -92,6 +105,11 @@ if ARGC > 1:
     elif sys.argv[1] in ("-v", "--version"):
         print(VERSION)
     elif sys.argv[1] in ("-s", "--start"):
-        main()
+        if ARGC > 2:
+            main(args=sys.argv[2:])
+        else:
+            main()
     else:
         gcde.common.eprint("ERROR: `%s': flag not recognized" % (sys.argv[1]))
+else:
+    print(HELP)
