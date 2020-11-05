@@ -1,0 +1,31 @@
+{
+	"xbox":{
+		"left_dpad":"left",
+		"right_dpad":"right",
+		"up_dpad":"up",
+		"down_dpad":"down",
+		"A":"enter",
+		"Y":"tab",
+		"B":""
+	},
+	"ps4":{
+		"left_dpad":"left",
+		"right_dpad":"right",
+		"up_dpad":"up",
+		"down_dpad":"down",
+		"X":"enter",
+		"tri":"tab",
+		"circ":""
+	},
+	"ps3":{
+		"left_dpad":"left",
+		"right_dpad":"right",
+		"up_dpad":"up",
+		"down_dpad":"down",
+		"X":"enter",
+		"tri":"tab",
+		"circ":""
+	
+	},
+	"default":"ps3"
+}

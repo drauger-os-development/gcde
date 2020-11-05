@@ -21,8 +21,9 @@ mkdir ../"$FOLDER"
 #							     #
 #							     #
 ##############################################################
-# We're using Python right now. Nothing to compile. 
-# Compiler definition is left in above due to the intention to convert to C++ in the future.
+cd usr/share/gcde/controller_support
+$COMPILER $ARGS gcde-analog-mapper -o gcde-analog-mapper.cxx
+cd ../../../..
 ##############################################################
 #							     #
 #							     #
@@ -67,6 +68,8 @@ fi
 cp -R DEBIAN ../"$FOLDER"/DEBIAN
 cd ..
 #DELETE STUFF HERE
+rm "$FOLDER"/usr/share/gcde/controller_support/gcde-analog-mapper.cxx
+rm gcde/usr/share/gcde/controller_support/gcde-analog-mapper
 rm -rf "$FOLDER"/usr/lib
 #build the shit
 rm "$FOLDER"/DEBIAN/gcde-common.control "$FOLDER"/DEBIAN/gcde-common.install "$FOLDER"/DEBIAN/gcde-desktop.control
