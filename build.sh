@@ -22,7 +22,7 @@ mkdir ../"$FOLDER"
 #							     #
 ##############################################################
 cd usr/share/gcde/controller_support
-$COMPILER $ARGS gcde-analog-mapper -o gcde-analog-mapper.cxx
+$COMPILER $ARGS gcde-analog-mapper.cxx -o gcde-analog-mapper
 cd ../../../..
 ##############################################################
 #							     #

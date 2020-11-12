@@ -26,10 +26,17 @@
 #include <linux/joystick.h>
 #include <string>
 #include <cmath>
+#include <sys/stat.h>
 
 using namespace std;
 
 #define elif else if
+
+bool DoesPathExist(const string &s)
+{
+  struct stat buffer;
+  return (stat (s.c_str(), &buffer) == 0);
+}
 /**
  * Reads a joystick event from the joystick device.
  *
@@ -174,9 +181,16 @@ int main(int argc, char *argv[])
     /* This loop will exit if the controller is unplugged. */
     while (read_event(js, &event) == 0)
     {
+        if (DoesPathExist("/etc/gcde/enable-mapping.flag"))
+        {
+            cout << "Pausing!" << endl;
+            usleep(850);
+            continue;
+        }
         switch (event.type)
         {
             case JS_EVENT_AXIS:
+                // cout << "Casing ..." << endl;
                 axis = get_axis_state(&event, axes);
                 if (axis == 0)
                     direction = get_direction(axes);
@@ -190,8 +204,6 @@ int main(int argc, char *argv[])
                 break;
         }
 
-        //fflush(stdout);
-        //usleep(500);
     }
 
     close(js);
