@@ -193,11 +193,13 @@ int main(int argc, char *argv[])
                 // cout << "Casing ..." << endl;
                 axis = get_axis_state(&event, axes);
                 if (axis == 0)
+                {
                     direction = get_direction(axes);
                     if (direction != "")
                     {
                         cout << direction << endl;
                     }
+                }
                 break;
             default:
                 /* Ignore init events. */

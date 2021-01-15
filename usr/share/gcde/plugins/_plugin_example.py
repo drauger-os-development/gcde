@@ -85,7 +85,7 @@ def plugin_setup(settings):
     # to edit global settings from within a plugin will not affect a running GCDE
     # instance.
     #
-    # If you plan to overwrite TIle.run(), leave "exec" blank, but it still must be defined.
+    # If you plan to overwrite Tile.run(), leave "exec" blank, but it still must be defined.
     updater_settings = {"exec":[""],
                         "icon":"steam",
                         "name":"Update System",

@@ -7,7 +7,7 @@ ARCH=$(cat DEBIAN/control | grep 'Architecture: '| sed 's/Architecture: //g')
 FOLDER="$PAK\_$VERSION\_$ARCH"
 FOLDER=$(echo "$FOLDER" | sed 's/\\//g')
 if [ "$ARCH" == "amd64" ]; then
-	COMPILER="gcc -m64"
+	COMPILER="g++ -m64"
 	ARGS="-Wall"
 elif [ "$ARCH" == "arm64" ]; then
 	COMPILER="aarch64-linux-gnu-g++"
